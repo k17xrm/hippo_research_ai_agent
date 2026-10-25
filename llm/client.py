@@ -1,8 +1,11 @@
 """Provider-independent interface and Ollama/Mock implementations."""
 
 import asyncio
+import json
 from abc import ABC, abstractmethod
 from typing import Any
+
+from pydantic import ValidationError
 
 from config.settings import Settings
 from schemas.research import ResearchPlan
@@ -16,6 +19,37 @@ class LLMClient(ABC):
     @abstractmethod
     async def generate_plan(self, query: str, system_prompt: str) -> Any:
         """Return data that can be validated as a ResearchPlan."""
+
+
+def _parse_research_plan_response(raw_plan: str, query: str) -> ResearchPlan:
+    """Accept the direct schema and Qwen's nested research-plan variant."""
+    payload = json.loads(raw_plan)
+    if not isinstance(payload, dict):
+        raise ValueError("The Ollama response must be a JSON object.")
+
+    nested_plan = payload.get("research_plan")
+    if isinstance(nested_plan, dict):
+        normalized_tasks = []
+        for task in nested_plan.get("tasks", []):
+            if not isinstance(task, dict):
+                normalized_tasks.append(task)
+                continue
+            normalized_task = dict(task)
+            if "objective" not in normalized_task and "objectives" in normalized_task:
+                normalized_task["objective"] = normalized_task["objectives"]
+            normalized_tasks.append(normalized_task)
+
+        payload = {
+            "original_query": query,
+            "research_goal": (
+                nested_plan.get("research_goal")
+                or nested_plan.get("objective")
+                or nested_plan.get("title")
+            ),
+            "tasks": normalized_tasks,
+        }
+
+    return ResearchPlan.model_validate(payload)
 
 
 class MockLLMClient(LLMClient):
@@ -76,9 +110,11 @@ class OllamaLLMClient(LLMClient):
                 )
             if not response.message.content:
                 raise LLMError("The LLM returned no valid research plan.")
-            return ResearchPlan.model_validate_json(response.message.content)
+            return _parse_research_plan_response(response.message.content, query)
         except LLMError:
             raise
+        except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
+            raise LLMError("Ollama returned an invalid research plan.") from exc
         except TimeoutError as exc:
             raise LLMError(
                 f"The Ollama request timed out after {self.settings.llm_timeout:g} seconds."

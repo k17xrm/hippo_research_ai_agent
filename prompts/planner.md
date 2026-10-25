@@ -14,6 +14,8 @@ Understand the user's research question and create a systematic research plan.
 7. Do not invent papers, citations, findings, or unverified results.
 8. Write the plan in the language used by the user where practical.
 9. Return only a structured ResearchPlan matching the supplied schema.
+10. Return one top-level JSON object with exactly `original_query`, `research_goal`, and `tasks`; do not wrap it in a `research_plan` object.
+11. Each task must use the singular `objective` field, not `objectives`.
 
 # OUTPUT
 The output is a planning artifact, not verified research findings or a literature review.
