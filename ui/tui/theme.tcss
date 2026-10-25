@@ -1,0 +1,53 @@
+Screen {
+    background: #101018;
+    color: #eeeeF5;
+    layout: vertical;
+    padding: 0 2;
+}
+
+Header, Footer { background: #33203c; }
+
+#mode {
+    dock: top;
+    width: auto;
+    color: #ffd166;
+    text-style: bold;
+    margin: 1 0 0 0;
+}
+
+.section-title {
+    color: #ff8fbd;
+    text-style: bold;
+    margin-top: 1;
+}
+
+#topic { border: tall #cc6b9c; }
+
+AgentCard {
+    height: 7;
+    border: round #cc6b9c;
+    align: center middle;
+    background: #201826;
+}
+
+#agent-name { color: #ff9dc5; text-style: bold; }
+#agent-status { text-style: bold; }
+#agent-spinner { height: 1; color: #ff8fbd; display: none; }
+#agent-status.waiting { color: #999999; }
+#agent-status.thinking { color: #ff8fbd; }
+#agent-status.working { color: #64c9ff; }
+#agent-status.completed { color: #83e377; }
+#agent-status.error { color: #ff5c5c; }
+
+#results {
+    min-height: 10;
+    height: 1fr;
+    border: round #555568;
+    padding: 1 2;
+}
+
+#activity {
+    height: 8;
+    border: round #555568;
+    padding: 0 1;
+}
