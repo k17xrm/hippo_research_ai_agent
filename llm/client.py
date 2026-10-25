@@ -1,4 +1,4 @@
-"""Provider-independent interface and OpenAI/Mock implementations."""
+"""Provider-independent interface and Ollama/Mock implementations."""
 
 import asyncio
 from abc import ABC, abstractmethod
@@ -49,42 +49,43 @@ class MockLLMClient(LLMClient):
         }
 
 
-class OpenAILLMClient(LLMClient):
+class OllamaLLMClient(LLMClient):
     def __init__(self, settings: Settings) -> None:
-        if settings.llm_provider != "openai":
+        if settings.llm_provider != "ollama":
             raise LLMError(f"Unsupported LLM provider: {settings.llm_provider}")
-        if not settings.openai_api_key:
-            raise LLMError(
-                "OPENAI_API_KEY is missing. Add it to .env or run with --mock."
-            )
         self.settings = settings
 
     async def generate_plan(self, query: str, system_prompt: str) -> ResearchPlan:
         try:
-            from openai import AsyncOpenAI
+            from ollama import AsyncClient
 
-            client = AsyncOpenAI(api_key=self.settings.openai_api_key)
+            client = AsyncClient(
+                host=self.settings.ollama_host,
+                timeout=self.settings.llm_timeout,
+            )
             async with asyncio.timeout(self.settings.llm_timeout):
-                response = await client.responses.parse(
+                response = await client.chat(
                     model=self.settings.llm_model,
-                    input=[
+                    messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": query},
                     ],
-                    text_format=ResearchPlan,
+                    format=ResearchPlan.model_json_schema(),
+                    options={"temperature": 0},
+                    think=False,
                 )
-            if response.output_parsed is None:
+            if not response.message.content:
                 raise LLMError("The LLM returned no valid research plan.")
-            return response.output_parsed
+            return ResearchPlan.model_validate_json(response.message.content)
         except LLMError:
             raise
         except TimeoutError as exc:
             raise LLMError(
-                f"The LLM request timed out after {self.settings.llm_timeout:g} seconds."
+                f"The Ollama request timed out after {self.settings.llm_timeout:g} seconds."
             ) from exc
         except Exception as exc:
-            raise LLMError(f"OpenAI request failed: {exc}") from exc
+            raise LLMError(f"Ollama request failed: {exc}") from exc
 
 
 def create_llm_client(settings: Settings, mock: bool = False) -> LLMClient:
-    return MockLLMClient() if mock else OpenAILLMClient(settings)
+    return MockLLMClient() if mock else OllamaLLMClient(settings)

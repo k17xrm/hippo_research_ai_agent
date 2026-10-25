@@ -11,7 +11,7 @@ User → Rich CLI / Textual TUI → ResearchOrchestrator
                                   ↓
                             PlannerAgent
                                   ↓
-                    OpenAI 또는 Mock LLM Client
+                    Ollama 또는 Mock LLM Client
                                   ↓
                     Pydantic ResearchPlan 검증
                                   ↓
@@ -23,7 +23,7 @@ User → Rich CLI / Textual TUI → ResearchOrchestrator
 - 입력 언어와 연구 분야에 맞춰 3~6개 조사 과제를 만드는 Planner Agent
 - Pydantic v2 기반 스키마, 중복 ID 및 공백 검증
 - 세션별 ResearchState와 UI 독립적인 AgentEvent
-- OpenAI Responses API Structured Outputs 연동
+- Ollama Structured Outputs 연동
 - API 없이 동작하는 입력 대응형 Mock Demo Mode
 - Rich CLI와 비동기 Worker 기반 Textual TUI
 - 재사용 가능한 분홍색 하마 AgentCard
@@ -37,7 +37,7 @@ Search, Analysis, Critic Agent와 논문 검색, 데이터베이스는 이번 �
 agents/       BaseAgent, PlannerAgent
 config/       환경변수 설정
 core/         Orchestrator, State, Event
-llm/          OpenAI/Mock LLM Client
+llm/          Ollama/Mock LLM Client
 prompts/      코드와 분리된 Planner Prompt
 schemas/      Pydantic 전달 모델
 ui/           Rich CLI 및 Textual TUI
@@ -58,17 +58,17 @@ python -m pip install -e '.[dev]'
 
 ## 환경변수
 
-실제 OpenAI API를 사용할 때만 `.env`를 만듭니다. 키를 Git에 커밋하지 마세요.
+로컬 Ollama를 사용할 때 `.env`로 모델과 서버 주소를 설정합니다.
 
 ```bash
 cp .env.example .env
 ```
 
 ```dotenv
-LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o-mini
-LLM_TIMEOUT=60
-OPENAI_API_KEY=your_api_key
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen3:8b
+LLM_TIMEOUT=120
+OLLAMA_HOST=http://127.0.0.1:11434
 ```
 
 ## 실행
@@ -88,11 +88,11 @@ python main.py --tui --mock
 python main.py --cli --mock
 ```
 
-`--cli`와 `--tui`는 동시에 사용할 수 없으며 argparse가 오류를 출력합니다. LIVE 모드에서 API 키가 없으면 `--mock` 사용 방법을 안내합니다.
+`--cli`와 `--tui`는 동시에 사용할 수 없으며 argparse가 오류를 출력합니다. LIVE 모드에서 Ollama 서버 또는 모델에 연결하지 못하면 오류를 안내합니다.
 
 ## 테스트
 
-일반 테스트는 실제 OpenAI API를 호출하지 않습니다.
+일반 테스트는 실제 Ollama 서버를 호출하지 않습니다.
 
 ```bash
 pytest -q
